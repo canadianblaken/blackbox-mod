@@ -14,7 +14,7 @@ from unicorn.arm_const import UC_ARM_REG_SP
 
 from emu import STACK, Emu
 
-e = Emu("out/solo+slice+duck+chord+cond+filter+cpu+od+comp+seqfix+fx2+munchi+cave/BLACKBOX.bin", "out/cave.elf")
+e = Emu("out/solo+slice+duck+chord+cond+filter+cpu+od+comp+seqfix+fx2+munchi+cave+live/BLACKBOX.bin", "out/cave.elf")
 e.uc.mem_map(0x38800000, 0x1000)
 e.uc.mem_map(0x58024000, 0x1000)
 STORE, ARR = 0x24020088 + 0x8C90, 0x24070000
@@ -81,7 +81,8 @@ def check(label, cond, detail=""):
 
 # --- registration
 seen = {}
-e.stub(0x0808C0D8, lambda: seen.update(param=e.arg(1), label=e.arg(2), names=e.arg(3), count=e.r32(e.uc.reg_read(UC_ARM_REG_SP)), xml=e.r32(e.uc.reg_read(UC_ARM_REG_SP) + 4)))
+# the first list registered is the Compressor; live.c registers Live Mode after it
+e.stub(0x0808C0D8, lambda: seen or seen.update(param=e.arg(1), label=e.arg(2), names=e.arg(3), count=e.r32(e.uc.reg_read(UC_ARM_REG_SP)), xml=e.r32(e.uc.reg_read(UC_ARM_REG_SP) + 4)))
 e.w32(STACK, 0)
 e.w32(STACK + 4, 1000)
 e.w32(STACK + 8, 0x080CC3F4)
@@ -221,7 +222,7 @@ check(f"Limit, Comp Thresh at -24 dB on a hot signal: still never over the ceili
 added = []
 e.stub(0x08093EF6, lambda: added.append((e.arg(1), e.arg(2))))
 e.call("comp_defaults", 0x24072000, 0xB4, 1)
-check("settings defaults: Compressor 1 (Stock) as before, then Comp Thresh 0", added == [(0xB4, 1), (0x1D0, 0)], added)
+check("settings defaults: Compressor 1 (Stock) as before, then Comp Thresh 0, then Live Mode Off", added == [(0xB4, 1), (0x1D0, 0), (0x1F0, 0)], added)
 page = [e.r16(0x080EED18 + 2 * k) for k in range(12)]
 check("Tools Main page: Headphone, Compressor, Comp Thresh, Out 1-3, Brightness, Metronome, Metro Out, Metro Gain, SD Mode", page == [0xBA, 0xB4, 0x1D0, 0xBB, 0xBC, 0xBD, 0x7F, 0xCD, 0xF6, 0xF7, 0x19B, 0], [hex(v) for v in page])
 check("pad Overdrive label reads 'Saturation:' (xml name unchanged)", e.cstr(e.r32(0x0808D878)) == "Saturation:" and e.cstr(0x080CC620) == "overdrive", e.cstr(e.r32(0x0808D878)))

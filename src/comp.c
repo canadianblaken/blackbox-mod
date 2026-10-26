@@ -49,6 +49,8 @@ typedef void (*store_add_fn)(void *store, int param, int value);
 #define TYPE_DB    7             /* value in milli-dB, shown as dB (the Metro Gain style) */
 
 void bkp_enable(void);
+void live_register(void *table);
+void live_defaults(void *store);
 
 #define MODELS 5
 const char *const comp_names[2 + MODELS] = {"Off", "Stock", "Glue", "Punch", "Opto", "Squash", "Limit"};
@@ -61,6 +63,7 @@ void comp_register(void *table, int param, int type, const char *label, int min,
     (void)max;
     fw_register_list(table, param, label, comp_names, 2 + MODELS, xml);
     fw_register_num(table, PARAM_THRESH, TYPE_DB, "Comp Thresh:", -24000, 12000, "compthresh");
+    live_register(table);
 }
 
 /* Replaces the "Compressor defaults to 1" entry of the global settings defaults (bl @0x08094886): add ours after it. */
@@ -68,6 +71,7 @@ void comp_defaults(void *store, int param, int value)
 {
     fw_store_add(store, param, value);
     fw_store_add(store, PARAM_THRESH, 0);
+    live_defaults(store);
 }
 
 /* Pad Overdrive is now a different circuit (od.c): its label on the pad page. */
